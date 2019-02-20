@@ -1,0 +1,25 @@
+{
+  "name": "fht-dla",
+  "version": "0.0.6",
+  "description": "",
+  "repository": "github:StudioProcess/fht-dla",
+  "engines": {
+    "node": ">=8.9.0",
+    "npm": ">=5.7.0"
+  },
+  "scripts": {
+    "start": "browser-sync . --port 8080 --no-notify --files index.html app",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "reinstall": "npm ci"
+  },
+  "keywords": [],
+  "author": "Process <contact@process.studio> (https://process.studio)",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "dat.gui": "^0.7.5",
+    "three": "^0.101.1"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.26.3"
+  }
+}
