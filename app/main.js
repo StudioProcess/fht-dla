@@ -78,8 +78,10 @@ function setup() {
   igeo.addAttribute( 'offset', new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3) );
   igeo.addAttribute( 'color', new THREE.InstancedBufferAttribute(new Float32Array(colors), 4) );
   igeo.addAttribute( 'size', new THREE.InstancedBufferAttribute(new Float32Array(sizes), 1) );
+  igeo.attributes.offset.dynamic = true;
+  igeo.attributes.color.dynamic = true;
+  igeo.attributes.size.dynamic = true;
   // igeo.maxInstancedCount = 3;
-  
   
   let imat = new THREE.RawShaderMaterial( {
     uniforms: {
