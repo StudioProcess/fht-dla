@@ -1,7 +1,9 @@
 import * as util from './util.js';
+import * as tilesaver from './tilesaver.js';
 
 const W = 1280;
 const H = 800;
+const TILES = 8;
 
 let renderer, scene, camera, ocamera;
 let controls; // eslint-disable-line no-unused-vars
@@ -61,7 +63,7 @@ function setup() {
   // ocamera = new THREE.OrthographicCamera( W/-2, W/2, H/2, H/-2, 0, 100 );
   controls = new THREE.OrbitControls( camera, renderer.domElement );
   
-  const maxParticles = 10000;
+  const maxParticles = 100000; // normal save canvas only seems to work up to 120k
   const particleDetail = 8;
   
   let offsets = [];
@@ -96,7 +98,7 @@ function setup() {
   let mesh = new THREE.Mesh( igeo, imat );
   
   scene.add( mesh );
-  
+  tilesaver.init(renderer, scene, camera, TILES);
 }
 
 
@@ -117,6 +119,10 @@ document.addEventListener('keydown', e => {
 
   else if (e.key == 's') { // s .. save frame
     util.saveCanvas();
+  }
+  
+  else if (e.key == 'x') { // x .. export hires
+    tilesaver.save();
   }
 
 });
