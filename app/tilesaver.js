@@ -52,6 +52,9 @@ export function save(num_tiles) {
   targetCanvas.height = fullHeight;
   let targetContext = targetCanvas.getContext("2d");
   
+  renderer.setClearColor(new THREE.Color(0,0,0), 1);
+  renderer.clearColor();
+  
   for (let ty=0; ty<num_tiles; ty++) {
     for (let tx=0; tx<num_tiles; tx++) {
       let offsetX = tx * tileWidth;
