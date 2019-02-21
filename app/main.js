@@ -1,12 +1,15 @@
 import * as util from './util.js';
 import * as tilesaver from './tilesaver.js';
+import {Cluster, Particle} from './dla.js';
 
 const W = 1280;
 const H = 800;
-const TILES = 8;
+const TILES = 2;
 
 let renderer, scene, camera, ocamera;
 let controls; // eslint-disable-line no-unused-vars
+
+let cluster;
 
 const shader = {
   vs: `
@@ -63,14 +66,19 @@ function setup() {
   ocamera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1 );
   controls = new THREE.OrbitControls( camera, renderer.domElement );
   
-  const maxParticles = 100; // normal save canvas only seems to work up to 120k
-  const particleDetail = 8;
+  const maxParticles = 5000; // normal save canvas only seems to work up to 120k
+  const particleDetail = 32;
+  const particleSize = 0.02;
+  
+  
+  let minRadius = 1;
+  let maxRadius = 2;
   
   let offsets = [];
   let colors = [];
   let sizes = [];
   
-  // random placement
+  // // Random placement
   // Math.seedrandom(0);
   // for (let i=0; i<maxParticles; i++) {
   //   offsets.push( (Math.random()*2-1)*1, (Math.random()*2-1)*1, 0 );
@@ -78,16 +86,45 @@ function setup() {
   //   sizes.push( Math.random()*0.5 );
   // }
   
-  let horizontal = 17;
-  let vertical = 11;
-  Math.seedrandom(0);
-  for (let y=0; y<vertical; y++) {
-    for (let x=0; x<horizontal; x++) {
-      offsets.push( -1.6 + x*3.2/(horizontal-1), -1 + y*2/(vertical-1), 0 );
-      colors.push( Math.random()+0.1, 0, Math.random()+0.6, 1 );
-      sizes.push(0.1);
-    }
+  // // Grid placement
+  // let horizontal = 17;
+  // let vertical = 11;
+  // Math.seedrandom(0);
+  // for (let y=0; y<vertical; y++) {
+  //   for (let x=0; x<horizontal; x++) {
+  //     offsets.push( -1.6 + x*3.2/(horizontal-1), -1 + y*2/(vertical-1), 0 );
+  //     colors.push( Math.random()+0.1, 0, Math.random()+0.6, 1 );
+  //     sizes.push(0.1);
+  //   }
+  // }
+  
+  // Initial placement
+  // for (let i=0; i<maxParticles; i++) {
+  //   offsets.push( 0, 0, 0 );
+  //   colors.push( 1, 1, 1, 0.8 );
+  //   sizes.push( 0.1 );
+  // }
+  
+  function pushParticle(p) { 
+    offsets.push(p.x, p.y, 0);
+    colors.push(1, 1, 1, 0.8);
+    sizes.push(p.radius*2);
   }
+  cluster = new Cluster(0,0,particleSize/2); pushParticle(cluster.particles[0]);
+  Math.seedrandom(0);
+  for (let i=0; i<maxParticles-1; i++) {
+    // spawn particle outside of cluster
+    let angle = Math.random() * 2 * Math.PI;
+    let radius = Math.random() * (maxRadius*cluster.radius - minRadius*cluster.radius) + minRadius*cluster.radius;
+    let x = Math.cos(angle) * radius;
+    let y = Math.sin(angle) * radius;
+    let p = new Particle(x, y, particleSize/2);
+    cluster.stickOn(p);
+    // console.log(p);
+    pushParticle(p);
+  }
+  console.log(cluster);
+  
   
   let circle = new THREE.CircleGeometry( 0.5, particleDetail );
   let igeo = new THREE.InstancedBufferGeometry().fromGeometry(circle);
@@ -113,19 +150,26 @@ function setup() {
   
   scene.add( mesh );
   
-  let m0 = xmarker(); m0.scale.multiplyScalar(2*Math.sqrt(2)); scene.add(m0);
-  let m1 = xmarker(); m1.position.set(1.6,0,1); scene.add(m1);
-  let m2 = xmarker(); m2.position.set(0,1,1); scene.add(m2);
-  let m3 = xmarker(); m3.position.set(-1.6,0,1); scene.add(m3);
-  let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
+  // let m0 = xmarker(); m0.scale.multiplyScalar(2*Math.sqrt(2)); scene.add(m0);
+  // let m1 = xmarker(); m1.position.set(1.6,0,1); scene.add(m1);
+  // let m2 = xmarker(); m2.position.set(0,1,1); scene.add(m2);
+  // let m3 = xmarker(); m3.position.set(-1.6,0,1); scene.add(m3);
+  // let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
   
-  console.log(camera);
-  console.log(ocamera);
-  console.log(controls);
+  // console.log(camera);
+  // console.log(ocamera);
+  // console.log(controls);
+  console.log(mesh);
   
   tilesaver.init(renderer, scene, ocamera, TILES);
 }
 
+function updateParticleBuffer(index, p) {
+  mesh.geometry.attributes.offset.setXY(index, p.x, p.y);
+  // mesh.geometry.attributes.offset.needsUpdate = true;
+  mesh.geometry.attributes.size.setX(index, p.radius);
+  // mesh.geometry.attributes.size.needsUpdate = true;
+}
 
 function loop(time) { // eslint-disable-line no-unused-vars
   
