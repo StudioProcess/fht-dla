@@ -4,7 +4,7 @@ import {Cluster, Particle} from './dla.js';
 
 const W = 1280;
 const H = 800;
-const TILES = 2;
+const TILES = 3;
 
 let renderer, scene, camera, ocamera;
 let controls; // eslint-disable-line no-unused-vars
@@ -66,13 +66,12 @@ function setup() {
   ocamera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1 );
   controls = new THREE.OrbitControls( camera, renderer.domElement );
   
-  const maxParticles = 5000; // normal save canvas only seems to work up to 120k
+  const maxParticles = 200; // normal save canvas only seems to work up to 120k
   const particleDetail = 32;
-  const particleSize = 0.02;
+  const particleSize = 0.100;
   
-  
-  let minRadius = 1;
-  let maxRadius = 2;
+  let minRadius = 0.6;
+  let maxRadius = 1.6;
   
   let offsets = [];
   let colors = [];
@@ -86,17 +85,17 @@ function setup() {
   //   sizes.push( Math.random()*0.5 );
   // }
   
-  // // Grid placement
-  // let horizontal = 17;
-  // let vertical = 11;
-  // Math.seedrandom(0);
-  // for (let y=0; y<vertical; y++) {
-  //   for (let x=0; x<horizontal; x++) {
-  //     offsets.push( -1.6 + x*3.2/(horizontal-1), -1 + y*2/(vertical-1), 0 );
-  //     colors.push( Math.random()+0.1, 0, Math.random()+0.6, 1 );
-  //     sizes.push(0.1);
-  //   }
-  // }
+  // Grid placement
+  let horizontal = 17;
+  let vertical = 11;
+  Math.seedrandom(0);
+  for (let y=0; y<vertical; y++) {
+    for (let x=0; x<horizontal; x++) {
+      offsets.push( -1.6 + x*3.2/(horizontal-1), -1 + y*2/(vertical-1), 0 );
+      colors.push( Math.random()+0.1, 0, Math.random()+0.6, 1 );
+      sizes.push(0.1);
+    }
+  }
   
   // Initial placement
   // for (let i=0; i<maxParticles; i++) {
@@ -150,11 +149,11 @@ function setup() {
   
   scene.add( mesh );
   
-  // let m0 = xmarker(); m0.scale.multiplyScalar(2*Math.sqrt(2)); scene.add(m0);
-  // let m1 = xmarker(); m1.position.set(1.6,0,1); scene.add(m1);
-  // let m2 = xmarker(); m2.position.set(0,1,1); scene.add(m2);
-  // let m3 = xmarker(); m3.position.set(-1.6,0,1); scene.add(m3);
-  // let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
+  let m0 = xmarker(); m0.scale.multiplyScalar(2*Math.sqrt(2)); scene.add(m0);
+  let m1 = xmarker(); m1.position.set(1.6,0,1); scene.add(m1);
+  let m2 = xmarker(); m2.position.set(0,1,1); scene.add(m2);
+  let m3 = xmarker(); m3.position.set(-1.6,0,1); scene.add(m3);
+  let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
   
   // console.log(camera);
   // console.log(ocamera);
@@ -200,5 +199,37 @@ document.addEventListener('keydown', e => {
   else if (e.key == 'x') { // x .. export hires
     tilesaver.save();
   }
-
+  
+  else if (e.key == '1') { ocamera.clearViewOffset(); tileFactor=1; }
+  else if (e.key == '2') { setTile(2, 0, 0); }
+  else if (e.key == '3') { setTile(3, 0, 0); }
+  else if (e.key == '4') { setTile(4, 0, 0); }
+  else if (e.key == '5') { setTile(5, 0, 0); }
+  else if (e.key == '6') { setTile(6, 0, 0); }
+  else if (e.key == '7') { setTile(7, 0, 0); }
+  else if (e.key == '8') { setTile(8, 0, 0); }
+  else if (e.key == '9') { setTile(9, 0, 0); }
+  else if (e.key == 'ArrowLeft')  { setTile(tileFactor, tileX-1, tileY); }
+  else if (e.key == 'ArrowRight') { setTile(tileFactor, tileX+1, tileY); }
+  else if (e.key == 'ArrowUp')    { setTile(tileFactor, tileX, tileY-1); }
+  else if (e.key == 'ArrowDown')  { setTile(tileFactor, tileX, tileY+1); }
 });
+
+let tileFactor = 1;
+let tileX = 0;
+let tileY = 0;
+
+function setTile(factor, x, y) {
+  // console.log(factor, x, y);
+  tileFactor = factor;
+  tileX = (x+factor) % factor;
+  tileY = (y+factor) % factor;
+  let fullWidth = W * factor;
+  let fullHeight = H * factor;
+  let tileWidth = W;
+  let tileHeight = H;
+  let offsetX = tileX * W;
+  let offsetY = tileY * H;
+  console.log(`TILE ${tileX},${tileY} / OFFSET ${offsetX},${offsetY} / TOTAL ${fullWidth}x${fullHeight}`);
+  ocamera.setViewOffset( fullWidth, fullHeight, offsetX, offsetY, tileWidth, tileHeight );
+}
