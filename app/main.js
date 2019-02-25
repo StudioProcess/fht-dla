@@ -6,7 +6,7 @@ const W = 1280;
 const H = 800;
 const TILES = 8;
 
-let renderer, scene, camera, ocamera;
+let renderer, scene, camera;
 let controls; // eslint-disable-line no-unused-vars
 
 let cluster;
@@ -61,10 +61,12 @@ function setup() {
   document.body.appendChild( renderer.domElement );
   
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera( 75, W / H, 0.01, 1000 );
-  camera.position.z = 1;
-  ocamera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1 );
+  camera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1000 ); // left, right, top, bottom, near, far
+  
   controls = new THREE.OrbitControls( camera, renderer.domElement );
+  controls.screenSpacePanning = true;
+  controls.enableKeys = false;
+  controls.enableRotate = false;
   
   const maxParticles = 200; // normal save canvas only seems to work up to 120k
   const particleDetail = 32;
@@ -146,7 +148,7 @@ function setup() {
   } );
 
   let mesh = new THREE.Mesh( igeo, imat );
-  // mesh.frustumCulled = false;
+  mesh.frustumCulled = false;
   
   scene.add( mesh );
   
@@ -157,11 +159,10 @@ function setup() {
   let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
   
   // console.log(camera);
-  // console.log(ocamera);
   // console.log(controls);
   console.log(mesh);
   
-  tilesaver.init(renderer, scene, ocamera, TILES);
+  tilesaver.init(renderer, scene, camera, TILES);
 }
 
 function updateParticleBuffer(index, p) {
@@ -174,7 +175,7 @@ function updateParticleBuffer(index, p) {
 function loop(time) { // eslint-disable-line no-unused-vars
   
   requestAnimationFrame( loop );
-  renderer.render( scene, ocamera );
+  renderer.render( scene, camera );
   
 }
 
@@ -201,7 +202,11 @@ document.addEventListener('keydown', e => {
     tilesaver.save();
   }
   
-  else if (e.key == '1') { ocamera.clearViewOffset(); tileFactor=1; }
+  else if (e.key == 'Backspace') {
+    resetCamera();
+  }
+  
+  else if (e.key == '1') { camera.clearViewOffset(); tileFactor=1; }
   else if (e.key == '2') { setTile(2, 0, 0); }
   else if (e.key == '3') { setTile(3, 0, 0); }
   else if (e.key == '4') { setTile(4, 0, 0); }
@@ -232,5 +237,12 @@ function setTile(factor, x, y) {
   let offsetX = tileX * W;
   let offsetY = tileY * H;
   console.log(`TILE ${tileX},${tileY} / OFFSET ${offsetX},${offsetY} / TOTAL ${fullWidth}x${fullHeight}`);
-  ocamera.setViewOffset( fullWidth, fullHeight, offsetX, offsetY, tileWidth, tileHeight );
+  camera.setViewOffset( fullWidth, fullHeight, offsetX, offsetY, tileWidth, tileHeight );
+}
+
+function resetCamera() {
+  camera.position.set(0,0,0);
+  camera.zoom = 1;
+  camera.updateProjectionMatrix();
+  controls.target.set(0,0,0);
 }
