@@ -1,5 +1,5 @@
-// Witten & Sanders, 1981 style DLA
-let stepSize = 1;
+// [Witten & Sanders, 1981]-style DLA
+export let stepSize = 1; // as a factor to the radius
 
 
 export class Particle {
@@ -9,24 +9,27 @@ export class Particle {
     this.radius = radius;
   }
   
+  // Perform a number of brownian motion steps
   step(n = 1) {
     let angle = Math.random() * 2 * Math.PI;
-    this.x += Math.cos(angle) * stepSize;
-    this.y += Math.sin(angle) * stepSize;
+    this.x += Math.cos(angle) * stepSize*this.radius;
+    this.y += Math.sin(angle) * stepSize*this.radius;
     if (n > 1) this.step(n-1);
   }
   
+  // Distance squared to another particle
   distanceSquared(p) {
     let dx = p.x - this.x;
     let dy = p.y - this.y;
     return (dx * dx) + (dy * dy);
   }
   
+  // Euclidian distance to another particle
   distance(p) {
     return Math.sqrt(this.distanceSquared(p));
   }
   
-  // Move this particle so it touches p
+  // Move this particle so it touches another particle p
   stickTo(p) {
     let v = new THREE.Vector2(this.x - p.x, this.y - p.y); // vector from p to this
     v.setLength(this.radius + p.radius);
