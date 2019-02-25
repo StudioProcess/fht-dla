@@ -4,7 +4,7 @@ import {Cluster, Particle} from './dla.js';
 
 const W = 1280;
 const H = 800;
-const TILES = 3;
+const TILES = 8;
 
 let renderer, scene, camera, ocamera;
 let controls; // eslint-disable-line no-unused-vars
@@ -146,6 +146,7 @@ function setup() {
   } );
 
   let mesh = new THREE.Mesh( igeo, imat );
+  // mesh.frustumCulled = false;
   
   scene.add( mesh );
   
