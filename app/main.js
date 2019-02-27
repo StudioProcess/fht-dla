@@ -1,6 +1,7 @@
 import * as util from './util.js';
 import * as tilesaver from './tilesaver.js';
 import * as dla from './dla.js';
+import { GUI } from '../node_modules/dat.gui/build/dat.gui.module.js';
 
 const W = 1280;
 const H = 800;
@@ -8,7 +9,14 @@ const TILES = 8;
 
 let renderer, scene, camera;
 let controls; // eslint-disable-line no-unused-vars
-let cluster;
+let cluster, spawner;
+let gui;
+
+let params = {
+  spawn_direction: 0,
+  spawn_angle: 45,
+  spawn_radius: 1
+};
 
 const shader = {
   vs: `
@@ -163,8 +171,10 @@ function setup() {
   tilesaver.init(renderer, scene, camera, TILES);
   
   
-  let s = new dla.Spawner();
-  scene.add( s.object );
+  spawner = new dla.Spawner();
+  scene.add( spawner.object );
+  
+  createGUI();
 }
 
 function updateParticleBuffer(index, p) {
@@ -247,4 +257,18 @@ function resetCamera() {
   camera.zoom = 1;
   camera.updateProjectionMatrix();
   controls.target.set(0,0,0);
+}
+
+function createGUI() {
+  gui = new GUI();
+
+  gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
+    spawner.direction = v;
+  });
+  gui.add(params, 'spawn_angle', 0, 360).onChange(v => {
+    spawner.angle = v;
+  });
+  gui.add(params, 'spawn_radius', 0, 2).onChange(v => {
+    spawner.radius = v;
+  });
 }

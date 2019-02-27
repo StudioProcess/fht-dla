@@ -107,15 +107,15 @@ export class Cluster {
 
 // Just a parametric geometry, with parameter: [0..1]
 export class Spawner {
-  _segments = 10;
-  _radius = 1;
-  _radiusSquared = 1;
-  _angle = 90; // degrees
-  _direction = 0; // degrees. 0 is north. clockwise
+  _segments = 32;
   
-  constructor() {
+  constructor(radius = 1, direction = 0, angle = 90) {
+    this._radius = radius;
+    this._radiusSquared = radius*radius;
+    this._direction = direction; // degrees. 0 is north. clockwise
+    this._angle = angle; // degrees
     this.geometry = this.makeGeometry();
-    this.material = new THREE.LineBasicMaterial({color: '#005A9C', linewidth: 2});
+    this.material = new THREE.LineBasicMaterial({color: '#00BFFF', linewidth: 2});
     this.object = new THREE.Line(this.geometry, this.material);
   }
   
