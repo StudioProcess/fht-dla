@@ -1,12 +1,13 @@
 // [Witten & Sanders, 1981]-style DLA
 export let stepSize = 1; // as a factor to the radius
-
+export let stickTolerance = 2;
 
 export class Particle {
   constructor(x = 0, y = 0, radius = 0.05) {
     this.x = x;
     this.y = y;
     this.radius = radius;
+    this.radiusSquared = radius*radius;
   }
   
   // Perform a number of brownian motion steps
@@ -35,6 +36,18 @@ export class Particle {
     v.setLength(this.radius + p.radius);
     this.x = p.x + v.x;
     this.y = p.y + v.y;
+  }
+  
+  checkStuck(c) {
+    // quick check: outside the clusters radius?
+    if (this.distanceSquared(c.particles[0]) > c.radiusSquared) {
+      return false;
+    }
+    let nearest = c.nearestParticle(this);
+    if (nearest.distanceSquared < (this.radiusSquared + nearest.particle.radiusSquared) * stickTolerance) {
+      return nearest.particle;
+    }
+    return false;
   }
 }
 
@@ -66,9 +79,8 @@ export class Cluster {
     }
   }
   
-  // Stick p onto the nearest particle in the cluster
-  stickOn(p) {
-    // find nearest particle
+  // Find nearest particle to p inside this cluster
+  nearestParticle(p) {
     let nearest = null;
     let minDistSquared = Number.MAX_SAFE_INTEGER;
     for (let pi of this.particles) {
@@ -78,6 +90,13 @@ export class Cluster {
         nearest = pi;
       }
     }
+    return { particle: nearest, distanceSquared: minDistSquared };
+  }
+  
+  // Stick p onto the nearest particle in the cluster
+  stickOn(p) {
+    // find nearest particle
+    let nearest = this.nearestParticle(p).particle;
     // stick p on (moves p to touch nearest)
     p.stickTo(nearest);
     // add

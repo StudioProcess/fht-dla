@@ -67,6 +67,8 @@ function setup() {
   controls.screenSpacePanning = true;
   controls.enableKeys = false;
   controls.enableRotate = false;
+  controls.zoomSpeed = 1;
+  // console.log(controls);
   
   const maxParticles = 200; // normal save canvas only seems to work up to 120k
   const particleDetail = 32;
@@ -138,12 +140,9 @@ function setup() {
   // igeo.maxInstancedCount = 3;
   
   let imat = new THREE.RawShaderMaterial( {
-    uniforms: {
-      "time": { value: 1.0 },
-    },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
-    side: THREE.DoubleSide,
+    // side: THREE.DoubleSide,
     transparent: true
   } );
 
