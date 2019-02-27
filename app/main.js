@@ -12,7 +12,7 @@ let particleCount = 0; // total particle count / cluster size
 let renderer, scene, camera, controls;
 let geo, mat, mesh;
 let cluster, spawner;
-let gui;
+let gui, gui_cluster_size;
 
 let params = {
   spawn_direction: 0,
@@ -23,7 +23,8 @@ let params = {
   particle_detail: 32,
   particle_mode: 'nearest',
   
-  cluster_size: 100,
+  cluster_size: '0',
+  cluster_spawn: 100,
   cluster_grow: null,
 };
 
@@ -214,8 +215,14 @@ function createGUI() {
   gui.add(params, 'particle_size', 0.001, 0.1, 0.001);
   gui.add(params, 'particle_detail', 3, 100);
   gui.add(params, 'particle_mode', ['nearest', 'brownian']);
-  gui.add(params, 'cluster_size', 1, 10000);
-  params.cluster_grow = function () { growNearest(); };
+  gui_cluster_size = gui.add(params, 'cluster_size');
+  gui_cluster_size.domElement.style.pointerEvents = 'none';
+  gui_cluster_size.domElement.querySelector('input').style.background = 'none';
+  
+  gui.add(params, 'cluster_spawn', 1, 10000);
+  params.cluster_grow = function () { 
+    if (params.particle_mode == 'nearest') growNearest();
+  };
   gui.add(params, 'cluster_grow');
 }
 
@@ -231,12 +238,14 @@ function updateParticleBuffer(index, p) {
 
 
 function growNearest() {
-  for (let i=0; i<params.cluster_size; i++) {
+  for (let i=0; i<params.cluster_spawn; i++) {
     let s = spawner.getSpawn();
     let p = new dla.Particle(s[0], s[1], params.particle_size/2);
     cluster.stickOn(p);
     // console.log(p);
     updateParticleBuffer(particleCount++, p);
-    geo.maxInstancedCount = particleCount;
+
   }
+  geo.maxInstancedCount = particleCount;
+  gui_cluster_size.setValue(particleCount);
 }
