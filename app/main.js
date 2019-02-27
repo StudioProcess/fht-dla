@@ -147,7 +147,10 @@ document.addEventListener('keydown', e => {
   }
   
   else if (e.key == 'x') { // x .. export hires
+    let wasVisible = spawner.object.visible;
+    if (wasVisible) spawner.object.visible = false;
     tilesaver.save();
+    if (wasVisible) spawner.object.visible = true;
   }
   
   else if (e.key == 'Backspace') {
