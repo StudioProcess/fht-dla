@@ -103,3 +103,62 @@ export class Cluster {
     this.add(p);
   }
 }
+
+
+// Just a parametric geometry, with parameter: [0..1]
+export class Spawner {
+  _segments = 10;
+  _radius = 1;
+  _radiusSquared = 1;
+  _angle = 90; // degrees
+  _direction = 0; // degrees. 0 is north. clockwise
+  
+  constructor() {
+    this.geometry = this.makeGeometry();
+    this.material = new THREE.LineBasicMaterial({color: '#005A9C', linewidth: 2});
+    this.object = new THREE.Line(this.geometry, this.material);
+  }
+  
+  // get the cartesian location for a parameter value
+  getLocation(t) {
+    let startAngle = 90 - (this._direction +  this._angle/2);
+    let endAngle = startAngle +this._angle;
+    let a = (startAngle + (endAngle - startAngle) * t) / 180 * Math.PI;
+    return [ Math.cos(a) * this._radius, Math.sin(a) * this._radius, 0 ];
+  }
+  
+  getSpawn() {
+    return getLocation(Math.random());
+  }
+  
+  makeGeometry() {
+    let vertices = [];
+    for (let i=0; i<this._segments+1; i++) {
+      vertices.push( ...this.getLocation(i/this._segments) );
+    }
+    let geo = new THREE.BufferGeometry();
+    geo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3) );
+    return geo;
+  }
+  
+  updateObject() {
+    this.geometry = this.makeGeometry(this._segments);
+    this.object.geometry = this.geometry;
+  }
+  
+  get segments() { return this._segments; }
+  set segments(n) { this._segments = Math.max(n, 1); this.updateObject(); }
+  
+  get radius() { return this._radius; }
+  set radius(r) { this._radius = r; this._radiusSquared = r*r; this.updateObject(); }
+  
+  get angle() { return this._angle; }
+  set angle(r) { this._angle = r; this.updateObject(); }
+  
+  get direction() { return this._direction; }
+  set direction(r) { this._direction = r; this.updateObject(); }
+  
+  checkInside(p) {
+    return p.x*p.x + p.y*p.y < this._radiusSquared;
+  }
+}
