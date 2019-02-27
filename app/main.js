@@ -6,16 +6,25 @@ import { GUI } from '../node_modules/dat.gui/build/dat.gui.module.js';
 const W = 1280;
 const H = 800;
 const TILES = 8;
+const MAX_PARTICLES = 100000; // size of preallocated geometry
 
-let renderer, scene, camera;
-let controls; // eslint-disable-line no-unused-vars
+let particleCount = 0; // total particle count / cluster size
+let renderer, scene, camera, controls;
+let geo, mat, mesh;
 let cluster, spawner;
 let gui;
 
 let params = {
   spawn_direction: 0,
   spawn_angle: 45,
-  spawn_radius: 1
+  spawn_radius: 1,
+  
+  particle_size: 0.010,
+  particle_detail: 32,
+  particle_mode: 'nearest',
+  
+  cluster_size: 100,
+  cluster_grow: null,
 };
 
 const shader = {
@@ -69,119 +78,46 @@ function setup() {
   
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1000 ); // left, right, top, bottom, near, far
-  
   controls = new THREE.OrbitControls( camera, renderer.domElement );
   controls.screenSpacePanning = true;
   controls.enableKeys = false;
   controls.enableRotate = false;
   controls.zoomSpeed = 1;
   // console.log(controls);
-  
-  const maxParticles = 200; // normal save canvas only seems to work up to 120k
-  const particleDetail = 32;
-  const particleSize = 0.100;
-  
-  let minRadius = 0.6;
-  let maxRadius = 1.6;
-  
-  let offsets = [];
-  let colors = [];
-  let sizes = [];
-  
-  // // Random placement
-  // Math.seedrandom(0);
-  // for (let i=0; i<maxParticles; i++) {
-  //   offsets.push( (Math.random()*2-1)*1, (Math.random()*2-1)*1, 0 );
-  //   colors.push( 0, 0, Math.random()+0.6, 0.3 );
-  //   sizes.push( Math.random()*0.5 );
-  // }
-  
-  // Grid placement
-  let horizontal = 17;
-  let vertical = 11;
-  Math.seedrandom(0);
-  for (let y=0; y<vertical; y++) {
-    for (let x=0; x<horizontal; x++) {
-      offsets.push( -1.6 + x*3.2/(horizontal-1), -1 + y*2/(vertical-1), 0 );
-      colors.push( Math.random()+0.1, 0, Math.random()+0.6, 1 );
-      sizes.push(0.1);
-    }
-  }
-  
-  // Initial placement
-  // for (let i=0; i<maxParticles; i++) {
-  //   offsets.push( 0, 0, 0 );
-  //   colors.push( 1, 1, 1, 0.8 );
-  //   sizes.push( 0.1 );
-  // }
-  
-  function pushParticle(p) { 
-    offsets.push(p.x, p.y, 0);
-    colors.push(1, 1, 1, 0.8);
-    sizes.push(p.radius*2);
-  }
-  cluster = new dla.Cluster(0,0,particleSize/2); pushParticle(cluster.particles[0]);
-  Math.seedrandom(0);
-  for (let i=0; i<maxParticles-1; i++) {
-    // spawn particle outside of cluster
-    let angle = Math.random() * 2 * Math.PI;
-    let radius = Math.random() * (maxRadius*cluster.radius - minRadius*cluster.radius) + minRadius*cluster.radius;
-    let x = Math.cos(angle) * radius;
-    let y = Math.sin(angle) * radius;
-    let p = new dla.Particle(x, y, particleSize/2);
-    cluster.stickOn(p);
-    // console.log(p);
-    pushParticle(p);
-  }
-  console.log(cluster);
+  tilesaver.init(renderer, scene, camera, TILES);
   
   
-  let circle = new THREE.CircleGeometry( 0.5, particleDetail );
-  let igeo = new THREE.InstancedBufferGeometry().fromGeometry(circle);
-  igeo.addAttribute( 'offset', new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3) );
-  igeo.addAttribute( 'color', new THREE.InstancedBufferAttribute(new Float32Array(colors), 4) );
-  igeo.addAttribute( 'size', new THREE.InstancedBufferAttribute(new Float32Array(sizes), 1) );
-  igeo.attributes.offset.dynamic = true;
-  igeo.attributes.color.dynamic = true;
-  igeo.attributes.size.dynamic = true;
-  // igeo.maxInstancedCount = 3;
+  cluster = new dla.Cluster(0,0,params.particle_size/2); 
+  spawner = new dla.Spawner();
+  scene.add( spawner.object );
   
-  let imat = new THREE.RawShaderMaterial( {
+  let circle = new THREE.CircleGeometry( 0.5, params.particle_detail );
+  geo = new THREE.InstancedBufferGeometry().fromGeometry(circle);
+  geo.addAttribute( 'offset', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*3), 3) );
+  geo.addAttribute( 'color', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*4), 4) );
+  geo.addAttribute( 'size', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*1), 1) );
+  geo.attributes.offset.dynamic = true;
+  geo.attributes.color.dynamic = true;
+  geo.attributes.size.dynamic = true;
+  
+  geo.maxInstancedCount = 100; // start drawing nothing
+  // geo.setDrawRange(0, 100); // TODO: this or maxInstancedCount?
+  
+  mat = new THREE.RawShaderMaterial({
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
     // side: THREE.DoubleSide,
     transparent: true
-  } );
+  });
 
-  let mesh = new THREE.Mesh( igeo, imat );
+  mesh = new THREE.Mesh( geo, mat );
   mesh.frustumCulled = false;
-  
-  // scene.add( mesh );
-  
-  // let m0 = xmarker(); m0.scale.multiplyScalar(2*Math.sqrt(2)); scene.add(m0);
-  // let m1 = xmarker(); m1.position.set(1.6,0,1); scene.add(m1);
-  // let m2 = xmarker(); m2.position.set(0,1,1); scene.add(m2);
-  // let m3 = xmarker(); m3.position.set(-1.6,0,1); scene.add(m3);
-  // let m4 = xmarker(); m4.position.set(0,-1,1); scene.add(m4);
-  
-  // console.log(camera);
-  // console.log(controls);
+  scene.add( mesh );
   console.log(mesh);
   
-  tilesaver.init(renderer, scene, camera, TILES);
-  
-  
-  spawner = new dla.Spawner();
-  scene.add( spawner.object );
-  
   createGUI();
-}
-
-function updateParticleBuffer(index, p) {
-  mesh.geometry.attributes.offset.setXY(index, p.x, p.y);
-  // mesh.geometry.attributes.offset.needsUpdate = true;
-  mesh.geometry.attributes.size.setX(index, p.radius);
-  // mesh.geometry.attributes.size.needsUpdate = true;
+  
+    Math.seedrandom(0);
 }
 
 function loop(time) { // eslint-disable-line no-unused-vars
@@ -271,4 +207,33 @@ function createGUI() {
   gui.add(params, 'spawn_radius', 0, 2).onChange(v => {
     spawner.radius = v;
   });
+  
+  gui.add(params, 'particle_size', 0.001, 0.1, 0.001);
+  gui.add(params, 'particle_detail', 3, 100);
+  gui.add(params, 'particle_mode', ['nearest', 'brownian']);
+  gui.add(params, 'cluster_size', 1, 10000);
+  params.cluster_grow = function () { growNearest(); };
+  gui.add(params, 'cluster_grow');
+}
+
+// Update buffer data for a single particle
+function updateParticleBuffer(index, p) {
+  geo.attributes.offset.setXY(index, p.x, p.y);
+  geo.attributes.offset.needsUpdate = true;
+  geo.attributes.size.setX(index, p.radius*2);
+  geo.attributes.size.needsUpdate = true;
+  geo.attributes.color.setXYZW(index, 1, 1, 1, 0.8);
+  geo.attributes.color.needsUpdate = true;
+}
+
+
+function growNearest() {
+  for (let i=0; i<params.cluster_size; i++) {
+    let s = spawner.getSpawn();
+    let p = new dla.Particle(s[0], s[1], params.particle_size/2);
+    cluster.stickOn(p);
+    // console.log(p);
+    updateParticleBuffer(particleCount++, p);
+    geo.maxInstancedCount = particleCount;
+  }
 }

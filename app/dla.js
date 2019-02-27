@@ -108,6 +108,7 @@ export class Cluster {
 // Just a parametric geometry, with parameter: [0..1]
 export class Spawner {
   _segments = 32;
+  _z = 1;
   
   constructor(radius = 1, direction = 0, angle = 90) {
     this._radius = radius;
@@ -124,11 +125,11 @@ export class Spawner {
     let startAngle = 90 - (this._direction +  this._angle/2);
     let endAngle = startAngle +this._angle;
     let a = (startAngle + (endAngle - startAngle) * t) / 180 * Math.PI;
-    return [ Math.cos(a) * this._radius, Math.sin(a) * this._radius, 0 ];
+    return [ Math.cos(a) * this._radius, Math.sin(a) * this._radius, this._z ];
   }
   
   getSpawn() {
-    return getLocation(Math.random());
+    return this.getLocation(Math.random());
   }
   
   makeGeometry() {
