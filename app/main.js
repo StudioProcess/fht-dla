@@ -18,6 +18,7 @@ let params = {
   bg_color: '#fff',
   particle_color: '#000',
   particle_opacity: 1,
+  particle_scale: 1,
   
   spawn_angle: 360,
   spawn_direction: 0,
@@ -42,7 +43,7 @@ const shader = {
     
     uniform vec3  global_color;
     uniform float global_opacity;
-    // uniform float global_scale;
+    uniform float global_scale;
     
     attribute vec3 position;
     attribute vec3 offset;
@@ -53,7 +54,7 @@ const shader = {
     
     void main() {
       vColor = vec4(global_color, global_opacity) * color;
-      vec3 vPosition = position * size + offset;
+      vec3 vPosition = position * size * global_scale + offset;
       gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
     }`,
   fs: `
@@ -118,7 +119,7 @@ function setup() {
     uniforms: { 
       "global_color":   { value: new THREE.Color(params.particle_color) },
       "global_opacity": { value: params.particle_opacity },
-      // "global_scale":   { value: new THREE.Vector2(2, 1) },
+      "global_scale":   { value: params.particle_scale },
     },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
@@ -193,6 +194,10 @@ function createGUI() {
   gui.add(params, 'particle_opacity', 0, 1, 0.01).onChange(v => {
     mat.uniforms.global_opacity.value = v;
   });
+  gui.add(params, 'particle_scale', 0, 3, 0.01).onChange(v => {
+    mat.uniforms.global_scale.value = v;
+  });
+  gui.add(params, 'particle_detail', 3, 100);
 
   gui.add(params, 'spawn_angle', 0, 360).onChange(v => {
     spawner.angle = v;
@@ -205,7 +210,6 @@ function createGUI() {
   });
   
   gui.add(params, 'particle_size', 0.001, 0.02, 0.0001);
-  gui.add(params, 'particle_detail', 3, 100);
   gui.add(params, 'particle_mode', ['nearest', 'brownian']);
   gui.add(params, 'particle_stickyness', 0, 1, 0.01);
   
