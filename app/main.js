@@ -15,6 +15,10 @@ let cluster, spawner;
 let gui, gui_cluster_size;
 
 let params = {
+  bg_color: '#fff',
+  particle_color: '#000',
+  particle_opacity: 1,
+  
   spawn_angle: 360,
   spawn_direction: 0,
   spawn_radius: 1,
@@ -35,7 +39,10 @@ const shader = {
     precision highp float;
     uniform mat4 modelViewMatrix;
     uniform mat4 projectionMatrix;
-    // uniform float time;
+    
+    uniform vec3  global_color;
+    uniform float global_opacity;
+    // uniform float global_scale;
     
     attribute vec3 position;
     attribute vec3 offset;
@@ -45,7 +52,7 @@ const shader = {
     varying vec4 vColor;
     
     void main() {
-      vColor = color;
+      vColor = vec4(global_color, global_opacity) * color;
       vec3 vPosition = position * size + offset;
       gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
     }`,
@@ -78,6 +85,7 @@ function setup() {
   renderer.setSize( W, H );
   // renderer.setPixelRatio( window.devicePixelRatio );
   document.body.appendChild( renderer.domElement );
+  setCanvasBackground(params.bg_color);
   
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera( -W/H, W/H, 1, -1, -1, 1000 ); // left, right, top, bottom, near, far
@@ -107,6 +115,11 @@ function setup() {
   // geo.setDrawRange(0, 100); // TODO: this or maxInstancedCount?
   
   mat = new THREE.RawShaderMaterial({
+    uniforms: { 
+      "global_color":   { value: new THREE.Color(params.particle_color) },
+      "global_opacity": { value: params.particle_opacity },
+      // "global_scale":   { value: new THREE.Vector2(2, 1) },
+    },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
     // side: THREE.DoubleSide,
@@ -120,7 +133,7 @@ function setup() {
   
   createGUI();
   
-    Math.seedrandom(0);
+  Math.seedrandom(0);
 }
 
 function loop(time) { // eslint-disable-line no-unused-vars
@@ -173,6 +186,14 @@ function resetCamera() {
 function createGUI() {
   gui = new GUI();
 
+  gui.addColor(params, 'bg_color').onChange(setCanvasBackground);
+  gui.addColor(params, 'particle_color').onChange(v => {
+    mat.uniforms.global_color.value = new THREE.Color(v);
+  });
+  gui.add(params, 'particle_opacity', 0, 1, 0.01).onChange(v => {
+    mat.uniforms.global_opacity.value = v;
+  });
+
   gui.add(params, 'spawn_angle', 0, 360).onChange(v => {
     spawner.angle = v;
   });
@@ -212,7 +233,7 @@ function updateParticleBuffer(index, p) {
   geo.attributes.offset.needsUpdate = true;
   geo.attributes.size.setX(index, p.radius*2);
   geo.attributes.size.needsUpdate = true;
-  geo.attributes.color.setXYZW(index, 1, 1, 1, 0.8);
+  geo.attributes.color.setXYZW(index, 1, 1, 1, 1);
   geo.attributes.color.needsUpdate = true;
 }
 
@@ -277,4 +298,8 @@ function lockGUI(lock = true) {
     gui.domElement.style.pointerEvents = 'auto';
     gui.domElement.style.opacity = 1;
   }
+}
+
+function setCanvasBackground(colstr) {
+  renderer.domElement.style.backgroundColor = colstr;
 }
