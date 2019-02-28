@@ -19,12 +19,15 @@ let params = {
   bg_color: '#fff',
   particle_color: '#000',
   particle_opacity: 1,
-  particle_scale: 1,
+  // particle_scaleProp: false,
+  particle_scaleX: 1,
+  particle_scaleY: 1,
   particle_detail: 32,
   particle_tri: null,
   particle_quad: null,
   particle_penta: null,
   particle_hexa: null,
+  particle_preRotation: 0,
   particle_rotation: 0,
   particle_align: true,
   
@@ -53,7 +56,8 @@ const shader = {
     
     uniform vec3  global_color;
     uniform float global_opacity;
-    uniform float global_scale;
+    uniform vec2  global_scale;
+    uniform mat4  global_prerotation_matrix;
     uniform mat4  global_rotation_matrix;
     uniform bool  align;
     
@@ -74,8 +78,10 @@ const shader = {
         rotation_matrix[1][0] = rotation.z;
         rotation_matrix[1][1] = rotation.x;
       }
-      vec4 vPosition = global_rotation_matrix * rotation_matrix * vec4(position, 1.0);
-      vPosition = vPosition * size * global_scale + vec4(offset, 1.0);
+      vec4 vPosition = global_prerotation_matrix * vec4(position, 1.0);
+      vPosition = vPosition * vec4(global_scale, 1.0, 1.0) * size;
+      vPosition = global_rotation_matrix * rotation_matrix * vPosition;
+      vPosition += vec4(offset, 1.0); 
       gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     }`,
   fs: `
@@ -142,9 +148,10 @@ function setup() {
     uniforms: { 
       "global_color":   { value: new THREE.Color(params.particle_color) },
       "global_opacity": { value: params.particle_opacity },
-      "global_scale":   { value: params.particle_scale },
-      "global_rotation_matrix": { value: new THREE.Matrix4() },
-      "align":      { value: params.particle_align },
+      "global_scale":   { value: [params.particle_scaleX, params.particle_scaleY] },
+      "global_prerotation_matrix": { value: new THREE.Matrix4() },
+      "global_rotation_matrix":    { value: new THREE.Matrix4() },
+      "align":          { value: params.particle_align },
     },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
@@ -152,6 +159,7 @@ function setup() {
     transparent: true
   });
   setParticleRotation(params.particle_rotation);
+  setParticlePreRotation(params.particle_preRotation);
   
   mesh = new THREE.Mesh( geo, mat );
   mesh.frustumCulled = false;
@@ -223,10 +231,14 @@ function createGUI() {
   gui.add(params, 'particle_opacity', 0, 1, 0.01).onChange(v => {
     mat.uniforms.global_opacity.value = v;
   });
-  gui.add(params, 'particle_scale', 0, 3, 0.01).onChange(v => {
-    mat.uniforms.global_scale.value = v;
+  gui.add(params, 'particle_preRotation', 0, 180).onChange(setParticlePreRotation);
+  gui.add(params, 'particle_scaleX', 0, 5, 0.01).onChange(v => {
+    mat.uniforms.global_scale.value[0] = v;
   });
-  gui.add(params, 'particle_rotation', 0, 360).onChange(setParticleRotation);
+  gui.add(params, 'particle_scaleY', 0, 5, 0.01).onChange(v => {
+    mat.uniforms.global_scale.value[1] = v;
+  });
+  gui.add(params, 'particle_rotation', 0, 180).onChange(setParticleRotation);
   gui.add(params, 'particle_align').onChange(v => {
     mat.uniforms.align.value = v;
   });
@@ -392,4 +404,8 @@ function setParticleGeometry(detail) {
 
 function setParticleRotation(deg) {
   mat.uniforms.global_rotation_matrix.value = new THREE.Matrix4().makeRotationZ( - deg / 180 * Math.PI );
+} 
+
+function setParticlePreRotation(deg) {
+  mat.uniforms.global_prerotation_matrix.value = new THREE.Matrix4().makeRotationZ( - deg / 180 * Math.PI );
 } 
