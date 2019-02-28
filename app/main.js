@@ -24,7 +24,7 @@ let params = {
   particle_quad: null,
   particle_penta: null,
   particle_hexa: null,
-  // particle_rotation: 0,
+  particle_rotation: 0,
   
   spawn_angle: 360,
   spawn_direction: 0,
@@ -50,6 +50,7 @@ const shader = {
     uniform vec3  global_color;
     uniform float global_opacity;
     uniform float global_scale;
+    uniform mat4  global_rotation_matrix;
     
     attribute vec3 position;
     attribute vec3 offset;
@@ -60,8 +61,9 @@ const shader = {
     
     void main() {
       vColor = vec4(global_color, global_opacity) * color;
-      vec3 vPosition = position * size * global_scale + offset;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+      vec4 vPosition = global_rotation_matrix * vec4(position, 1.0);
+      vPosition = vPosition * size * global_scale + vec4(offset, 1.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     }`,
   fs: `
     precision highp float;
@@ -126,13 +128,15 @@ function setup() {
       "global_color":   { value: new THREE.Color(params.particle_color) },
       "global_opacity": { value: params.particle_opacity },
       "global_scale":   { value: params.particle_scale },
+      "global_rotation_matrix": { value: new THREE.Matrix4() },
     },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
     // side: THREE.DoubleSide,
     transparent: true
   });
-
+  setParticleRotation(params.particle_rotation);
+  
   mesh = new THREE.Mesh( geo, mat );
   mesh.frustumCulled = false;
   scene.add( mesh );
@@ -195,6 +199,7 @@ function createGUI() {
   gui = new GUI();
 
   gui.addColor(params, 'bg_color').onChange(setCanvasBackground);
+  
   gui.addColor(params, 'particle_color').onChange(v => {
     mat.uniforms.global_color.value = new THREE.Color(v);
   });
@@ -204,9 +209,8 @@ function createGUI() {
   gui.add(params, 'particle_scale', 0, 3, 0.01).onChange(v => {
     mat.uniforms.global_scale.value = v;
   });
+  gui.add(params, 'particle_rotation', 0, 360).onChange(setParticleRotation);
   let gui_particle_detail = gui.add(params, 'particle_detail', 3, 32, 1).onFinishChange(setParticleGeometry);
-  // gui.add(params, 'particle_rotation', -180, 180).onChange(setParticleRotation);
-  
   params.particle_tri = () => { gui_particle_detail.setValue(3); setParticleGeometry(3); };
   gui.add(params, 'particle_tri');
   params.particle_quad = () => { gui_particle_detail.setValue(4); setParticleGeometry(4); };
@@ -326,12 +330,13 @@ function setCanvasBackground(colstr) {
   renderer.domElement.style.backgroundColor = colstr;
 }
 
-// function setParticleRotation(deg) {
-//   mesh.rotation.z = (90-deg) / 180 * Math.PI;
-// } 
 
 function setParticleGeometry(detail) {
   detail = Math.floor(detail); // sanitize input
   let circle = new THREE.CircleGeometry( 0.5, detail );
   geo.fromGeometry(circle);
 }
+
+function setParticleRotation(deg) {
+  mat.uniforms.global_rotation_matrix.value = new THREE.Matrix4().makeRotationZ( - deg / 180 * Math.PI );
+} 
