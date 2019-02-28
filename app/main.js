@@ -15,8 +15,8 @@ let cluster, spawner;
 let gui, gui_cluster_size;
 
 let params = {
+  spawn_angle: 360,
   spawn_direction: 0,
-  spawn_angle: 45,
   spawn_radius: 1,
   
   particle_size: 0.010,
@@ -89,7 +89,7 @@ function setup() {
   
   
   cluster = new dla.Cluster(0,0,params.particle_size/2); 
-  spawner = new dla.Spawner();
+  spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
   scene.add( spawner.object );
   
   let circle = new THREE.CircleGeometry( 0.5, params.particle_detail );
@@ -171,11 +171,11 @@ function resetCamera() {
 function createGUI() {
   gui = new GUI();
 
-  gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
-    spawner.direction = v;
-  });
   gui.add(params, 'spawn_angle', 0, 360).onChange(v => {
     spawner.angle = v;
+  });
+  gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
+    spawner.direction = v;
   });
   gui.add(params, 'spawn_radius', 0, 2).onChange(v => {
     spawner.radius = v;
