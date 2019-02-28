@@ -27,6 +27,7 @@ let params = {
   cluster_size: '0',
   cluster_growBy: 100,
   cluster_grow: null,
+  cluster_clear: null,
 };
 
 const shader = {
@@ -182,7 +183,7 @@ function createGUI() {
     spawner.radius = v;
   });
   
-  gui.add(params, 'particle_size', 0.001, 0.1, 0.001);
+  gui.add(params, 'particle_size', 0.001, 0.02, 0.0001);
   gui.add(params, 'particle_detail', 3, 100);
   gui.add(params, 'particle_mode', ['nearest', 'brownian']);
   gui.add(params, 'particle_stickyness', 0, 1, 0.01);
@@ -196,6 +197,10 @@ function createGUI() {
     else if (params.particle_mode == 'brownian') growBrownian();
   };
   gui.add(params, 'cluster_grow');
+  params.cluster_clear = function () { 
+    clearCluster();
+  };
+  gui.add(params, 'cluster_clear');
 }
 
 // Update buffer data for a single particle
@@ -252,4 +257,11 @@ function growBrownian() {
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
   console.log(`added ${added} / outside ${outside} / didntstick ${didntstick}`);
+}
+
+function clearCluster() {
+  cluster = new dla.Cluster(0,0,params.particle_size/2); 
+  particleCount = 0;
+  geo.maxInstancedCount = particleCount;
+  gui_cluster_size.setValue(particleCount);
 }
