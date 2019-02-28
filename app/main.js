@@ -38,7 +38,7 @@ let params = {
   
   cluster_size: '0',
   cluster_growthRate: 1,
-  cluster_growBy: 100,
+  cluster_growBy: 1000,
   cluster_grow: null,
   cluster_stop: null,
   cluster_clear: null,
@@ -185,7 +185,7 @@ document.addEventListener('keydown', e => {
     if (wasVisible) spawner.object.visible = true;
   }
   
-  else if (e.key == 'Backspace') {
+  else if (e.key == 'r') {
     resetCamera();
   }
   
@@ -235,7 +235,7 @@ function createGUI() {
     spawner.radius = v;
   });
   
-  gui.add(params, 'particle_size', 0.001, 0.02, 0.0001);
+  gui.add(params, 'particle_size', 0.005, 0.02, 0.0001);
   gui.add(params, 'particle_mode', ['nearest', 'brownian']);
   gui.add(params, 'particle_stickyness', 0, 1, 0.01);
   

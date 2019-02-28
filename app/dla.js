@@ -38,14 +38,28 @@ export class Particle {
     this.y = p.y + v.y;
   }
   
+  // checkStuck(c) {
+  //   // quick check: outside the clusters radius?
+  //   if (this.distanceSquared(c.particles[0]) > c.radiusSquared) {
+  //     return false;
+  //   }
+  //   let nearest = c.nearestParticle(this);
+  //   if (nearest.distanceSquared < (this.radiusSquared + nearest.particle.radiusSquared) * stickTolerance) {
+  //     return nearest.particle;
+  //   }
+  //   return false;
+  // }
+  
   checkStuck(c) {
     // quick check: outside the clusters radius?
     if (this.distanceSquared(c.particles[0]) > c.radiusSquared) {
       return false;
     }
-    let nearest = c.nearestParticle(this);
-    if (nearest.distanceSquared < (this.radiusSquared + nearest.particle.radiusSquared) * stickTolerance) {
-      return nearest.particle;
+    for (let i=c.particles.length-1; i>=0; i--) { // check outer particles first
+      let p = c.particles[i];
+      if (this.distanceSquared(p) < (this.radiusSquared + p.radiusSquared) * stickTolerance) {
+        return p;
+      }
     }
     return false;
   }
