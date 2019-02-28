@@ -26,6 +26,7 @@ let params = {
   particle_penta: null,
   particle_hexa: null,
   particle_rotation: 0,
+  particle_align: true,
   
   spawn_angle: 360,
   spawn_direction: 0,
@@ -54,17 +55,26 @@ const shader = {
     uniform float global_opacity;
     uniform float global_scale;
     uniform mat4  global_rotation_matrix;
+    uniform bool  align;
     
     attribute vec3 position;
     attribute vec3 offset;
     attribute vec4 color;
     attribute float size;
+    attribute vec3 rotation; // holds: cos(t), sin(t), -sin(t)
     
     varying vec4 vColor;
     
     void main() {
       vColor = vec4(global_color, global_opacity) * color;
-      vec4 vPosition = global_rotation_matrix * vec4(position, 1.0);
+      mat4 rotation_matrix = mat4(1.0);
+      if (align) {
+        rotation_matrix[0][0] = rotation.x;
+        rotation_matrix[0][1] = rotation.y;
+        rotation_matrix[1][0] = rotation.z;
+        rotation_matrix[1][1] = rotation.x;
+      }
+      vec4 vPosition = global_rotation_matrix * rotation_matrix * vec4(position, 1.0);
       vPosition = vPosition * size * global_scale + vec4(offset, 1.0);
       gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     }`,
@@ -119,9 +129,11 @@ function setup() {
   geo.addAttribute( 'offset', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*3), 3) );
   geo.addAttribute( 'color', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*4), 4) );
   geo.addAttribute( 'size', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*1), 1) );
+  geo.addAttribute( 'rotation', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*3), 3) );
   geo.attributes.offset.dynamic = true;
   geo.attributes.color.dynamic = true;
   geo.attributes.size.dynamic = true;
+  geo.attributes.rotation.dynamic = true;
   
   geo.maxInstancedCount = 0; // start drawing nothing
   // geo.setDrawRange(0, 10); // this controls data PER instance
@@ -132,6 +144,7 @@ function setup() {
       "global_opacity": { value: params.particle_opacity },
       "global_scale":   { value: params.particle_scale },
       "global_rotation_matrix": { value: new THREE.Matrix4() },
+      "align":      { value: params.particle_align },
     },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
@@ -214,6 +227,9 @@ function createGUI() {
     mat.uniforms.global_scale.value = v;
   });
   gui.add(params, 'particle_rotation', 0, 360).onChange(setParticleRotation);
+  gui.add(params, 'particle_align').onChange(v => {
+    mat.uniforms.align.value = v;
+  });
   let gui_particle_detail = gui.add(params, 'particle_detail', 3, 32, 1).onFinishChange(setParticleGeometry);
   params.particle_tri = () => { gui_particle_detail.setValue(3); setParticleGeometry(3); };
   gui.add(params, 'particle_tri');
@@ -267,6 +283,10 @@ function updateParticleBuffer(index, p) {
   geo.attributes.size.needsUpdate = true;
   geo.attributes.color.setXYZW(index, 1, 1, 1, 1);
   geo.attributes.color.needsUpdate = true;
+  let cos = Math.cos(p.parentDirection);
+  let sin = Math.sin(p.parentDirection);
+  geo.attributes.rotation.setXYZ(index, cos, sin, -sin);
+  geo.attributes.rotation.needsUpdate = true;
 }
 
 

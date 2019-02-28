@@ -8,6 +8,8 @@ export class Particle {
     this.y = y;
     this.radius = radius;
     this.radiusSquared = radius*radius;
+    this.parent = null;
+    this.parentDirection = 0; // in radians, ccw from positive x-axis
   }
   
   // Perform a number of brownian motion steps
@@ -36,6 +38,8 @@ export class Particle {
     v.setLength(this.radius + p.radius);
     this.x = p.x + v.x;
     this.y = p.y + v.y;
+    this.parent = p; // save to whom i'm sticking to
+    this.parentDirection = v.clone().negate().angle();
   }
   
   // checkStuck(c) {
