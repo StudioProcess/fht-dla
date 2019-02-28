@@ -115,9 +115,20 @@ export class Spawner {
     this._radiusSquared = radius*radius;
     this._direction = direction; // degrees. 0 is north. clockwise
     this._angle = angle; // degrees
-    this.geometry = this.makeGeometry();
+    
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array((this._segments+1)*3), 3) );
+    
     this.material = new THREE.LineBasicMaterial({color: '#00BFFF', linewidth: 2});
-    this.object = new THREE.Line(this.geometry, this.material);
+    
+    this.line = new THREE.Line(this.geometry, this.material);
+    this.cross = new THREE.LineSegments(this. makeCrossGeo(), this.material);
+    
+    this.object = new THREE.Group();
+    this.object.add(this.line);
+    this.object.add(this.cross);
+    
+    this.updateObject();
   }
   
   // get the cartesian location for a parameter value
@@ -132,19 +143,24 @@ export class Spawner {
     return this.getLocation(Math.random());
   }
   
-  makeGeometry() {
-    let vertices = [];
-    for (let i=0; i<this._segments+1; i++) {
-      vertices.push( ...this.getLocation(i/this._segments) );
-    }
+  makeCrossGeo() {
+    const r = this._radius * 0.05;
+    let vertices = [-r/2,0,0,  r/2,0,0,  0,-r,0,  0,r,0];
     let geo = new THREE.BufferGeometry();
     geo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3) );
     return geo;
   }
   
   updateObject() {
-    this.geometry = this.makeGeometry(this._segments);
-    this.object.geometry = this.geometry;
+    let vertices = [];
+    for (let i=0; i<this._segments+1; i++) {
+      vertices.push( ...this.getLocation(i/this._segments) );
+    }
+    let attr = this.geometry.attributes.position;
+    attr.array.set(vertices);
+    attr.needsUpdate = true;
+    
+    this.cross.rotation.z = (-this.direction) / 180 * Math.PI;
   }
   
   get segments() { return this._segments; }
