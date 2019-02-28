@@ -13,6 +13,7 @@ let renderer, scene, camera, controls;
 let geo, mat, mesh;
 let cluster, spawner;
 let gui, gui_cluster_size;
+let growth = { growing:false };
 
 let params = {
   bg_color: '#fff',
@@ -36,8 +37,10 @@ let params = {
   particle_stickyness: 1,
   
   cluster_size: '0',
+  cluster_growthRate: 1,
   cluster_growBy: 100,
   cluster_grow: null,
+  cluster_stop: null,
   cluster_clear: null,
 };
 
@@ -150,6 +153,7 @@ function setup() {
 
 function loop(time) { // eslint-disable-line no-unused-vars
   
+  updateGrowth();
   requestAnimationFrame( loop );
   renderer.render( scene, camera );
   
@@ -238,8 +242,9 @@ function createGUI() {
   gui_cluster_size = gui.add(params, 'cluster_size');
   gui_cluster_size.domElement.style.pointerEvents = 'none';
   gui_cluster_size.domElement.querySelector('input').style.background = 'none';
+  gui.add(params, 'cluster_growthRate', 1, 10, 1);
   gui.add(params, 'cluster_growBy', 1, 10000);
-  params.cluster_grow = function () { 
+  params.cluster_grow = () => { 
     if (params.particle_mode == 'nearest') growNearest();
     else if (params.particle_mode == 'brownian') {
       lockGUI();
@@ -247,9 +252,10 @@ function createGUI() {
     }
   };
   gui.add(params, 'cluster_grow');
-  params.cluster_clear = function () { 
-    clearCluster();
-  };
+  
+  params.cluster_stop = () => { stopGrowing() };
+  gui.add(params, 'cluster_stop');
+  params.cluster_clear = () => { clearCluster() };
   gui.add(params, 'cluster_clear');
 }
 
@@ -276,12 +282,39 @@ function growNearest() {
   gui_cluster_size.setValue(particleCount);
 }
 
+function updateGrowth() {
+  if (growth.growing) {
+    if (growth.added >= growth.target) {
+      growth.growing = false;
+      return;
+    }
+    let steps = Math.min(params.cluster_growthRate, growth.target-growth.added); // don't overshoot target
+    if (growth.mode == 'brownian') {
+      growthStepBrownian(steps);
+      growth.added += steps;
+    }
+  }
+}
+
 function growBrownian() {
+  growth =  {
+    growing: true,
+    target: params.cluster_growBy,
+    added: 0,
+    mode: 'brownian'
+  };
+}
+
+function stopGrowing() {
+  growth.growing = false;
+}
+
+// grow by a number particle
+function growthStepBrownian(n = 1) {
   let added = 0;
   let outside = 0;
   let didntstick = 0;
-  
-  while (added < params.cluster_growBy) {
+  while (added < n) {
     let s = spawner.getSpawn();
     let p = new dla.Particle(s[0], s[1], params.particle_size/2);
     let stuckTo = false;
