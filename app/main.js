@@ -59,7 +59,7 @@ const shader = {
     }`
 };
 
-(function main() {  
+(function main() {
   
   setup(); // set up scene
   loop(); // start game loop
@@ -194,7 +194,10 @@ function createGUI() {
   gui.add(params, 'cluster_growBy', 1, 10000);
   params.cluster_grow = function () { 
     if (params.particle_mode == 'nearest') growNearest();
-    else if (params.particle_mode == 'brownian') growBrownian();
+    else if (params.particle_mode == 'brownian') {
+      lockGUI();
+      setTimeout(() => {growBrownian(); lockGUI(false)}, 100);
+    }
   };
   gui.add(params, 'cluster_grow');
   params.cluster_clear = function () { 
@@ -264,4 +267,14 @@ function clearCluster() {
   particleCount = 0;
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
+}
+
+function lockGUI(lock = true) {
+  if (lock) {
+    gui.domElement.style.pointerEvents = 'none';
+    gui.domElement.style.opacity = 0.5;
+  } else {
+    gui.domElement.style.pointerEvents = 'auto';
+    gui.domElement.style.opacity = 1;
+  }
 }
