@@ -21,10 +21,10 @@ let params = {
   
   particle_size: 0.010,
   particle_detail: 32,
-  particle_mode: 'nearest',
+  particle_mode: 'brownian',
   
   cluster_size: '0',
-  cluster_spawn: 100,
+  cluster_growBy: 100,
   cluster_grow: null,
 };
 
@@ -219,9 +219,10 @@ function createGUI() {
   gui_cluster_size.domElement.style.pointerEvents = 'none';
   gui_cluster_size.domElement.querySelector('input').style.background = 'none';
   
-  gui.add(params, 'cluster_spawn', 1, 10000);
+  gui.add(params, 'cluster_growBy', 1, 10000);
   params.cluster_grow = function () { 
     if (params.particle_mode == 'nearest') growNearest();
+    else if (params.particle_mode == 'brownian') growBrownian();
   };
   gui.add(params, 'cluster_grow');
 }
@@ -238,13 +239,38 @@ function updateParticleBuffer(index, p) {
 
 
 function growNearest() {
-  for (let i=0; i<params.cluster_spawn; i++) {
+  for (let i=0; i<params.cluster_growBy; i++) {
     let s = spawner.getSpawn();
     let p = new dla.Particle(s[0], s[1], params.particle_size/2);
     cluster.stickOn(p);
     // console.log(p);
     updateParticleBuffer(particleCount++, p);
+  }
+  geo.maxInstancedCount = particleCount;
+  gui_cluster_size.setValue(particleCount);
+}
 
+function growBrownian() {
+  let added = 0;
+  let outside = 0;
+  while (added < params.cluster_growBy) {
+    let s = spawner.getSpawn();
+    let p = new dla.Particle(s[0], s[1], params.particle_size/2);
+    let stuckTo = false;
+    while (!stuckTo) {
+      p.step();
+      if ( !spawner.checkInside(p) ) {
+        outside++;
+        break;
+      }
+      stuckTo = p.checkStuck(cluster);
+      if ( stuckTo ) {
+        p.stickTo(stuckTo);
+        cluster.add(p);
+        added++;
+        updateParticleBuffer(particleCount++, p);
+      }
+    }
   }
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);

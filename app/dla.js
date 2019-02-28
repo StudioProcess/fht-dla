@@ -160,6 +160,6 @@ export class Spawner {
   set direction(r) { this._direction = r; this.updateObject(); }
   
   checkInside(p) {
-    return p.x*p.x + p.y*p.y < this._radiusSquared;
+    return p.x*p.x + p.y*p.y < this._radiusSquared + p.radiusSquared;
   }
 }
