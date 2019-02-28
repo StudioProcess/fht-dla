@@ -22,6 +22,7 @@ let params = {
   particle_size: 0.010,
   particle_detail: 32,
   particle_mode: 'brownian',
+  particle_stickyness: 1,
   
   cluster_size: '0',
   cluster_growBy: 100,
@@ -184,10 +185,11 @@ function createGUI() {
   gui.add(params, 'particle_size', 0.001, 0.1, 0.001);
   gui.add(params, 'particle_detail', 3, 100);
   gui.add(params, 'particle_mode', ['nearest', 'brownian']);
+  gui.add(params, 'particle_stickyness', 0, 1, 0.01);
+  
   gui_cluster_size = gui.add(params, 'cluster_size');
   gui_cluster_size.domElement.style.pointerEvents = 'none';
   gui_cluster_size.domElement.querySelector('input').style.background = 'none';
-  
   gui.add(params, 'cluster_growBy', 1, 10000);
   params.cluster_grow = function () { 
     if (params.particle_mode == 'nearest') growNearest();
@@ -222,6 +224,8 @@ function growNearest() {
 function growBrownian() {
   let added = 0;
   let outside = 0;
+  let didntstick = 0;
+  
   while (added < params.cluster_growBy) {
     let s = spawner.getSpawn();
     let p = new dla.Particle(s[0], s[1], params.particle_size/2);
@@ -234,6 +238,10 @@ function growBrownian() {
       }
       stuckTo = p.checkStuck(cluster);
       if ( stuckTo ) {
+        if (Math.random() > params.particle_stickyness) {
+          didntstick++;
+          break;
+        }
         p.stickTo(stuckTo);
         cluster.add(p);
         added++;
@@ -243,4 +251,5 @@ function growBrownian() {
   }
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
+  console.log(`added ${added} / outside ${outside} / didntstick ${didntstick}`);
 }
