@@ -19,13 +19,19 @@ let params = {
   particle_color: '#000',
   particle_opacity: 1,
   particle_scale: 1,
+  particle_detail: 32,
+  particle_tri: null,
+  particle_quad: null,
+  particle_penta: null,
+  particle_hexa: null,
+  // particle_rotation: 0,
   
   spawn_angle: 360,
   spawn_direction: 0,
   spawn_radius: 1,
   
   particle_size: 0.010,
-  particle_detail: 32,
+
   particle_mode: 'brownian',
   particle_stickyness: 1,
   
@@ -103,8 +109,8 @@ function setup() {
   spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
   scene.add( spawner.object );
   
-  let circle = new THREE.CircleGeometry( 0.5, params.particle_detail );
-  geo = new THREE.InstancedBufferGeometry().fromGeometry(circle);
+  geo = new THREE.InstancedBufferGeometry();
+  setParticleGeometry(params.particle_detail);
   geo.addAttribute( 'offset', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*3), 3) );
   geo.addAttribute( 'color', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*4), 4) );
   geo.addAttribute( 'size', new THREE.InstancedBufferAttribute(new Float32Array(MAX_PARTICLES*1), 1) );
@@ -112,8 +118,8 @@ function setup() {
   geo.attributes.color.dynamic = true;
   geo.attributes.size.dynamic = true;
   
-  geo.maxInstancedCount = 100; // start drawing nothing
-  // geo.setDrawRange(0, 100); // TODO: this or maxInstancedCount?
+  geo.maxInstancedCount = 0; // start drawing nothing
+  // geo.setDrawRange(0, 10); // this controls data PER instance
   
   mat = new THREE.RawShaderMaterial({
     uniforms: { 
@@ -131,6 +137,7 @@ function setup() {
   mesh.frustumCulled = false;
   scene.add( mesh );
   console.log(mesh);
+  // setParticleRotation(params.particle_rotation);
   
   createGUI();
   
@@ -197,7 +204,18 @@ function createGUI() {
   gui.add(params, 'particle_scale', 0, 3, 0.01).onChange(v => {
     mat.uniforms.global_scale.value = v;
   });
-  gui.add(params, 'particle_detail', 3, 100);
+  let gui_particle_detail = gui.add(params, 'particle_detail', 3, 32, 1).onFinishChange(setParticleGeometry);
+  // gui.add(params, 'particle_rotation', -180, 180).onChange(setParticleRotation);
+  
+  params.particle_tri = () => { gui_particle_detail.setValue(3); setParticleGeometry(3); };
+  gui.add(params, 'particle_tri');
+  params.particle_quad = () => { gui_particle_detail.setValue(4); setParticleGeometry(4); };
+  gui.add(params, 'particle_quad');
+  params.particle_penta = () => { gui_particle_detail.setValue(5); setParticleGeometry(5); };
+  gui.add(params, 'particle_penta');
+  params.particle_hexa = () => { gui_particle_detail.setValue(6); setParticleGeometry(6); };
+  gui.add(params, 'particle_hexa');
+  
 
   gui.add(params, 'spawn_angle', 0, 360).onChange(v => {
     spawner.angle = v;
@@ -306,4 +324,14 @@ function lockGUI(lock = true) {
 
 function setCanvasBackground(colstr) {
   renderer.domElement.style.backgroundColor = colstr;
+}
+
+// function setParticleRotation(deg) {
+//   mesh.rotation.z = (90-deg) / 180 * Math.PI;
+// } 
+
+function setParticleGeometry(detail) {
+  detail = Math.floor(detail); // sanitize input
+  let circle = new THREE.CircleGeometry( 0.5, detail );
+  geo.fromGeometry(circle);
 }
