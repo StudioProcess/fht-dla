@@ -158,39 +158,8 @@ document.addEventListener('keydown', e => {
     resetCamera();
   }
   
-  else if (e.key == '1') { camera.clearViewOffset(); tileFactor=1; }
-  else if (e.key == '2') { setTile(2, 0, 0); }
-  else if (e.key == '3') { setTile(3, 0, 0); }
-  else if (e.key == '4') { setTile(4, 0, 0); }
-  else if (e.key == '5') { setTile(5, 0, 0); }
-  else if (e.key == '6') { setTile(6, 0, 0); }
-  else if (e.key == '7') { setTile(7, 0, 0); }
-  else if (e.key == '8') { setTile(8, 0, 0); }
-  else if (e.key == '9') { setTile(9, 0, 0); }
-  else if (e.key == 'ArrowLeft')  { setTile(tileFactor, tileX-1, tileY); }
-  else if (e.key == 'ArrowRight') { setTile(tileFactor, tileX+1, tileY); }
-  else if (e.key == 'ArrowUp')    { setTile(tileFactor, tileX, tileY-1); }
-  else if (e.key == 'ArrowDown')  { setTile(tileFactor, tileX, tileY+1); }
 });
 
-let tileFactor = 1;
-let tileX = 0;
-let tileY = 0;
-
-function setTile(factor, x, y) {
-  // console.log(factor, x, y);
-  tileFactor = factor;
-  tileX = (x+factor) % factor;
-  tileY = (y+factor) % factor;
-  let fullWidth = W * factor;
-  let fullHeight = H * factor;
-  let tileWidth = W;
-  let tileHeight = H;
-  let offsetX = tileX * W;
-  let offsetY = tileY * H;
-  console.log(`TILE ${tileX},${tileY} / OFFSET ${offsetX},${offsetY} / TOTAL ${fullWidth}x${fullHeight}`);
-  camera.setViewOffset( fullWidth, fullHeight, offsetX, offsetY, tileWidth, tileHeight );
-}
 
 function resetCamera() {
   camera.position.set(0,0,0);
