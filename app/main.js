@@ -340,9 +340,17 @@ function growthStepNearest(n = 1) {
       p = new dla.Particle(0, 0, params.particle_size/2);
       cluster.add(p);
     } else {
-      let s = spawner.getSpawn();
-      p = new dla.Particle(s[0], s[1], params.particle_size/2);
-      cluster.stickOn(p);
+      let stuck = false;
+      while (!stuck) {
+        let s = spawner.getSpawn();
+        p = new dla.Particle(s[0], s[1], params.particle_size/2);
+        let nearest = cluster.nearestParticle(p).particle;
+        p.stickTo(nearest);
+        if ( spawner.checkInside(p) ) {
+          cluster.add(p);
+          stuck = true;
+        }
+      }
     }
     // console.log(p);
     updateParticleBuffer(particleCount++, p);
