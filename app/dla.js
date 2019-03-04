@@ -127,6 +127,7 @@ export class Cluster {
 export class Spawner {
   _segments = 32;
   _z = 1;
+  _useFloor = true;
   
   constructor(radius = 1, direction = 0, angle = 90) {
     this._radius = radius;
@@ -134,17 +135,22 @@ export class Spawner {
     this._direction = direction; // degrees. 0 is north. clockwise
     this._angle = angle; // degrees
     
-    this.geometry = new THREE.BufferGeometry();
+    this.geometry = new THREE.BufferGeometry(); // spawner arc geometry
     this.geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array((this._segments+1)*3), 3) );
     
     this.material = new THREE.LineBasicMaterial({color: '#00BFFF', linewidth: 2});
     
     this.line = new THREE.Line(this.geometry, this.material);
-    this.cross = new THREE.LineSegments(this. makeCrossGeo(), this.material);
+    this.cross = new THREE.LineSegments(this.makeCrossGeo(), this.material);
+    this.topmarker = new THREE.Line(this.makeTopmarkerGeo(), this.material);
+    this.floor = new THREE.Line(this.makeFloorGeo(), this.material);
+    this.floor.visible = this._useFloor;
     
     this.object = new THREE.Group();
     this.object.add(this.line);
     this.object.add(this.cross);
+    this.object.add(this.topmarker);
+    this.object.add(this.floor);
     
     this.updateObject();
   }
@@ -169,6 +175,22 @@ export class Spawner {
     return geo;
   }
   
+  makeFloorGeo() {
+    const r = this._radius * 1.1;
+    let vertices = [-r,0,0,  r,0,0];
+    let geo = new THREE.BufferGeometry();
+    geo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3) );
+    return geo;
+  }
+  
+  makeTopmarkerGeo() {
+    const r = this._radius * 0.05;
+    let vertices = [0,-r,0,  0,r,0];
+    let geo = new THREE.BufferGeometry();
+    geo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3) );
+    return geo;
+  }
+  
   updateObject() {
     let vertices = [];
     for (let i=0; i<this._segments+1; i++) {
@@ -179,6 +201,11 @@ export class Spawner {
     attr.needsUpdate = true;
     
     this.cross.rotation.z = (-this.direction) / 180 * Math.PI;
+    this.topmarker.rotation.z = this.cross.rotation.z;
+    let rot = (90-this.direction) / 180 * Math.PI; // convert to math angle
+    this.topmarker.position.x = Math.cos(rot) * this._radius;
+    this.topmarker.position.y = Math.sin(rot) * this._radius;
+    this.floor.scale.x = this._radius;
   }
   
   get segments() { return this._segments; }
@@ -193,7 +220,13 @@ export class Spawner {
   get direction() { return this._direction; }
   set direction(r) { this._direction = r; this.updateObject(); }
   
+  get useFloor() { return this._useFloor; }
+  set useFloor(b) { this._useFloor = b; if (b) this.floor.visible = true; else this.floor.visible = false; }
+  
   checkInside(p) {
-    return p.x*p.x + p.y*p.y < this._radiusSquared + p.radiusSquared;
+    let inCircle = p.x*p.x + p.y*p.y < this._radiusSquared + p.radiusSquared;
+    if (!this._useFloor) return inCircle;
+    let aboveFloor = this._direction > -90 && this._direction < 90 ? p.y > 0 : p.y <= 0; // choose which side is 'above' the floor
+    return inCircle && aboveFloor; // above the floor as well
   }
 }

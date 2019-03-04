@@ -34,6 +34,7 @@ let params = {
   spawn_angle: 360,
   spawn_direction: 0,
   spawn_radius: 1,
+  spawn_useFloor: false,
   
   particle_size: 0.010,
 
@@ -128,6 +129,7 @@ function setup() {
   
   cluster = new dla.Cluster(0,0,params.particle_size/2); 
   spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
+  spawner.useFloor = params.spawn_useFloor;
   scene.add( spawner.object );
   
   geo = new THREE.InstancedBufferGeometry();
@@ -261,6 +263,9 @@ function createGUI() {
   });
   gui.add(params, 'spawn_radius', 0, 2).onChange(v => {
     spawner.radius = v;
+  });
+  gui.add(params, 'spawn_useFloor').onChange(v => {
+    spawner.useFloor = v;
   });
   
   gui.add(params, 'particle_size', 0.005, 0.02, 0.0001);
