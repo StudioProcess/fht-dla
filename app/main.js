@@ -30,6 +30,7 @@ let params = {
   particle_preRotation: 0,
   particle_rotation: 0,
   particle_align: true,
+  particle_offset: 0,
   
   spawn_angle: 360,
   spawn_direction: 0,
@@ -61,6 +62,7 @@ const shader = {
     uniform vec2  global_scale;
     uniform mat4  global_prerotation_matrix;
     uniform mat4  global_rotation_matrix;
+    uniform float global_offset;
     uniform bool  align;
     
     attribute vec3 position;
@@ -80,10 +82,13 @@ const shader = {
         rotation_matrix[1][0] = rotation.z;
         rotation_matrix[1][1] = rotation.x;
       }
-      vec4 vPosition = global_prerotation_matrix * vec4(position, 1.0);
+      vec4 vPosition = vec4(position, 1.0);
+      vPosition = global_prerotation_matrix * vPosition;
+      vPosition.x -= global_offset;
       vPosition = vPosition * vec4(global_scale, 1.0, 1.0) * size;
-      vPosition = global_rotation_matrix * rotation_matrix * vPosition;
-      vPosition += vec4(offset, 1.0); 
+      vPosition = rotation_matrix * vPosition;
+      vPosition = global_rotation_matrix * vPosition;
+      vPosition += vec4(offset, 1.0);
       gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     }`,
   fs: `
@@ -156,6 +161,7 @@ function setup() {
       "global_prerotation_matrix": { value: new THREE.Matrix4() },
       "global_rotation_matrix":    { value: new THREE.Matrix4() },
       "align":          { value: params.particle_align },
+      "global_offset":    { value: params.particle_offset },
     },
     vertexShader: shader.vs,
     fragmentShader: shader.fs,
@@ -243,6 +249,9 @@ function createGUI() {
     mat.uniforms.global_scale.value[1] = v;
   });
   gui.add(params, 'particle_rotation', 0, 180).onChange(setParticleRotation);
+  gui.add(params, 'particle_offset', -2, 2, 0.01).onChange(v => {
+    mat.uniforms.global_offset.value = v;
+  });
   gui.add(params, 'particle_align').onChange(v => {
     mat.uniforms.align.value = v;
   });
