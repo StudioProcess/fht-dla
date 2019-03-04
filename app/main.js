@@ -34,6 +34,7 @@ let params = {
   spawn_angle: 360,
   spawn_direction: 0,
   spawn_radius: 2,
+  spawn_offsetInner: 0,
   spawn_useFloor: false,
   
   particle_size: 0.010,
@@ -130,7 +131,7 @@ function setup() {
   cluster = new dla.Cluster();
   spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
   spawner.useFloor = params.spawn_useFloor;
-  setSpawnRadius(params.spawn_radius);
+  updateSpawnRadiusAndOffset();
   scene.add( spawner.object );
   
   geo = new THREE.InstancedBufferGeometry();
@@ -262,7 +263,8 @@ function createGUI() {
   gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
     spawner.direction = v;
   });
-  gui.add(params, 'spawn_radius', 0, 3, 0.01).onChange(setSpawnRadius);
+  gui.add(params, 'spawn_radius', 0, 3, 0.01).onChange(updateSpawnRadiusAndOffset);
+  gui.add(params, 'spawn_offsetInner', 0, 3, 0.01).onChange(updateSpawnRadiusAndOffset);
   gui.add(params, 'spawn_useFloor').onChange(v => {
     spawner.useFloor = v;
   });
@@ -315,11 +317,11 @@ function updateGrowth() {
     if (growth.mode == 'brownian') {
       growthStepBrownian(steps);
       growth.added += steps;
-      setSpawnRadius(params.spawn_radius);
+      updateSpawnRadiusAndOffset();
     } else if (growth.mode == 'nearest') {
       growthStepNearest(steps);
       growth.added += steps;
-      setSpawnRadius(params.spawn_radius);
+      updateSpawnRadiusAndOffset();
     }
   }
 }
@@ -417,7 +419,7 @@ function clearCluster() {
   particleCount = 0;
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
-  setSpawnRadius(params.spawn_radius);
+  updateSpawnRadiusAndOffset();
   
 }
 
@@ -450,11 +452,13 @@ function setParticlePreRotation(deg) {
   mat.uniforms.global_prerotation_matrix.value = new THREE.Matrix4().makeRotationZ( - deg / 180 * Math.PI );
 } 
 
-// Set Spawn radius in multiples of cluster size
-function setSpawnRadius(r) {
+// Update Spawn radius in multiples of cluster size
+function updateSpawnRadiusAndOffset() {
   let cr = cluster.radius;
   if (cr == 0) {
     cr = 0.25;
   }
-  spawner.radius = cr * r;
+  spawner.radius = cr * params.spawn_radius;
+  spawner.offsetInner = cr * params.spawn_offsetInner;
+  spawner.clusterMarkerRadius = cr;
 }

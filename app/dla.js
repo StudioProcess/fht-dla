@@ -124,22 +124,33 @@ export class Spawner {
   constructor(radius = 1, direction = 0, angle = 90) {
     this._radius = radius;
     this._radiusSquared = radius*radius;
+    this._offsetInner = 0;
+    this._clusterMarkerRadius = 0;
     this._direction = direction; // degrees. 0 is north. clockwise
     this._angle = angle; // degrees
     
     this.geometry = new THREE.BufferGeometry(); // spawner arc geometry
     this.geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array((this._segments+1)*3), 3) );
+    this.geometryInner = new THREE.BufferGeometry(); // inner spawner arc geometry
+    this.geometryInner.addAttribute('position', new THREE.BufferAttribute(new Float32Array((this._segments+1)*3), 3) );
+    this.geometryClusterMarker= new THREE.BufferGeometry(); 
+    this.geometryClusterMarker.addAttribute('position', new THREE.BufferAttribute(new Float32Array((this._segments+1)*3), 3) );
     
-    this.material = new THREE.LineBasicMaterial({color: '#00BFFF', linewidth: 2});
+    this.material = new THREE.LineBasicMaterial({color: '#66EFFF', linewidth: 1});
+    this.clusterMarkerMaterial = new THREE.LineBasicMaterial({color: '#FFBFAA', linewidth: 1});
     
     this.line = new THREE.Line(this.geometry, this.material);
-    this.cross = new THREE.LineSegments(this.makeCrossGeo(), this.material);
+    this.lineInner = new THREE.Line(this.geometryInner, this.material);
+    this.clusterMarker = new THREE.Line(this.geometryClusterMarker, this.clusterMarkerMaterial);
+    this.cross = new THREE.LineSegments(this.makeCrossGeo(), this.clusterMarkerMaterial);
     this.topmarker = new THREE.Line(this.makeTopmarkerGeo(), this.material);
     this.floor = new THREE.Line(this.makeFloorGeo(), this.material);
     this.floor.visible = this._useFloor;
     
     this.object = new THREE.Group();
     this.object.add(this.line);
+    this.object.add(this.lineInner);
+    this.object.add(this.clusterMarker);
     this.object.add(this.cross);
     this.object.add(this.topmarker);
     this.object.add(this.floor);
@@ -148,15 +159,20 @@ export class Spawner {
   }
   
   // get the cartesian location for a parameter value
-  getLocation(t) {
+  getLocation(t, radius = this._radius) {
     let startAngle = 90 - (this._direction +  this._angle/2);
     let endAngle = startAngle +this._angle;
     let a = (startAngle + (endAngle - startAngle) * t) / 180 * Math.PI;
-    return [ Math.cos(a) * this._radius, Math.sin(a) * this._radius, this._z ];
+    return [ Math.cos(a) * radius, Math.sin(a) * radius, this._z ];
   }
   
   getSpawn() {
-    return this.getLocation(Math.random());
+    if (this._offsetInner <= 0) {
+      return this.getLocation(Math.random());
+    }
+    let minRadius = Math.max( 0, this._radius - this._offsetInner );
+    let radius = Math.random() * (this._radius - minRadius) + minRadius; // determine random radius
+    return this.getLocation(Math.random(), radius);
   }
   
   makeCrossGeo() {
@@ -185,12 +201,18 @@ export class Spawner {
   
   updateObject() {
     let vertices = [];
+    let verticesInner = [];
+    let verticesClusterMarker = [];
     for (let i=0; i<this._segments+1; i++) {
       vertices.push( ...this.getLocation(i/this._segments) );
+      verticesInner.push( ...this.getLocation(i/this._segments, Math.max(0, this._radius - this._offsetInner)) );
+      verticesClusterMarker.push( ...this.getLocation(i/this._segments, this._clusterMarkerRadius ));
     }
     let attr = this.geometry.attributes.position;
     attr.array.set(vertices);
     attr.needsUpdate = true;
+    attr = this.geometryInner.attributes.position; attr.array.set(verticesInner); attr.needsUpdate = true;
+    attr = this.geometryClusterMarker.attributes.position; attr.array.set(verticesClusterMarker); attr.needsUpdate = true;
     
     this.cross.rotation.z = (-this.direction) / 180 * Math.PI;
     this.topmarker.rotation.z = this.cross.rotation.z;
@@ -205,6 +227,12 @@ export class Spawner {
   
   get radius() { return this._radius; }
   set radius(r) { this._radius = r; this._radiusSquared = r*r; this.updateObject(); }
+  
+  get offsetInner() { return this._offsetInner; }
+  set offsetInner(o) { this._offsetInner = o; this.updateObject(); }
+  
+  get clusterMarkerRadius() { return this._clusterMarkerRadius; }
+  set clusterMarkerRadius(r) { this._clusterMarkerRadius = r; this.updateObject(); }
   
   get angle() { return this._angle; }
   set angle(r) { this._angle = r; this.updateObject(); }
