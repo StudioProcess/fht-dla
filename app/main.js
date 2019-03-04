@@ -33,7 +33,7 @@ let params = {
   
   spawn_angle: 360,
   spawn_direction: 0,
-  spawn_radius: 1,
+  spawn_radius: 2,
   spawn_useFloor: false,
   
   particle_size: 0.010,
@@ -130,6 +130,7 @@ function setup() {
   cluster = new dla.Cluster();
   spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
   spawner.useFloor = params.spawn_useFloor;
+  setSpawnRadius(params.spawn_radius);
   scene.add( spawner.object );
   
   geo = new THREE.InstancedBufferGeometry();
@@ -261,9 +262,7 @@ function createGUI() {
   gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
     spawner.direction = v;
   });
-  gui.add(params, 'spawn_radius', 0, 2).onChange(v => {
-    spawner.radius = v;
-  });
+  gui.add(params, 'spawn_radius', 0, 3).onChange(setSpawnRadius);
   gui.add(params, 'spawn_useFloor').onChange(v => {
     spawner.useFloor = v;
   });
@@ -335,6 +334,7 @@ function updateGrowth() {
     if (growth.mode == 'brownian') {
       growthStepBrownian(steps);
       growth.added += steps;
+      setSpawnRadius(params.spawn_radius);
     }
   }
 }
@@ -397,6 +397,8 @@ function clearCluster() {
   particleCount = 0;
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
+  setSpawnRadius(params.spawn_radius);
+  
 }
 
 function lockGUI(lock = true) {
@@ -427,3 +429,12 @@ function setParticleRotation(deg) {
 function setParticlePreRotation(deg) {
   mat.uniforms.global_prerotation_matrix.value = new THREE.Matrix4().makeRotationZ( - deg / 180 * Math.PI );
 } 
+
+// Set Spawn radius in multiples of cluster size
+function setSpawnRadius(r) {
+  let cr = cluster.radius;
+  if (cr == 0) {
+    cr = 0.25;
+  }
+  spawner.radius = cr * r;
+}

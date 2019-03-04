@@ -176,7 +176,7 @@ export class Spawner {
   }
   
   makeTopmarkerGeo() {
-    const r = this._radius * 0.05;
+    const r = this._radius * 0.01;
     let vertices = [0,-r,0,  0,r,0];
     let geo = new THREE.BufferGeometry();
     geo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3) );
