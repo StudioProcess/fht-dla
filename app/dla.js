@@ -76,14 +76,6 @@ export class Cluster {
   radius = 0;
   radiusSquared = 0;
   
-  constructor(x = 0, y = 0, radius = 0.05) {
-    let p = new Particle(x, y, radius);
-    this.particles.push(p);
-    this.size = 1;
-    this.radius = p.radius;
-    this.radiusSquared = p.radius * p.radius;
-  }
-  
   // Add particle to the cluster (without moving it), update cluster radius accordingly
   add(p) {
     // add

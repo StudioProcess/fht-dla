@@ -127,7 +127,7 @@ function setup() {
   tilesaver.init(renderer, scene, camera, TILES);
   
   
-  cluster = new dla.Cluster(0,0,params.particle_size/2); 
+  cluster = new dla.Cluster();
   spawner = new dla.Spawner(params.spawn_radius, params.spawn_direction, params.spawn_angle);
   spawner.useFloor = params.spawn_useFloor;
   scene.add( spawner.object );
@@ -309,9 +309,15 @@ function updateParticleBuffer(index, p) {
 
 function growNearest() {
   for (let i=0; i<params.cluster_growBy; i++) {
-    let s = spawner.getSpawn();
-    let p = new dla.Particle(s[0], s[1], params.particle_size/2);
-    cluster.stickOn(p);
+    let p;
+    if (cluster.size == 0) {
+      p = new dla.Particle(0, 0, params.particle_size/2);
+      cluster.add(p);
+    } else {
+      let s = spawner.getSpawn();
+      p = new dla.Particle(s[0], s[1], params.particle_size/2);
+      cluster.stickOn(p);
+    }
     // console.log(p);
     updateParticleBuffer(particleCount++, p);
   }
@@ -352,6 +358,13 @@ function growthStepBrownian(n = 1) {
   let outside = 0;
   let didntstick = 0;
   while (added < n) {
+    if (cluster.size == 0) { // Add first particle in the center
+      let p = new dla.Particle(0,0, params.particle_size/2);
+      cluster.add(p);
+      added++;
+      updateParticleBuffer(particleCount++, p);
+      continue;
+    }
     let s = spawner.getSpawn();
     let p = new dla.Particle(s[0], s[1], params.particle_size/2);
     let stuckTo = false;
@@ -380,7 +393,7 @@ function growthStepBrownian(n = 1) {
 }
 
 function clearCluster() {
-  cluster = new dla.Cluster(0,0,params.particle_size/2); 
+  cluster = new dla.Cluster(); 
   particleCount = 0;
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
