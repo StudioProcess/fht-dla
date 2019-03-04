@@ -262,7 +262,7 @@ function createGUI() {
   gui.add(params, 'spawn_direction', -180, 180).onChange(v => {
     spawner.direction = v;
   });
-  gui.add(params, 'spawn_radius', 0, 3).onChange(setSpawnRadius);
+  gui.add(params, 'spawn_radius', 0, 3, 0.01).onChange(setSpawnRadius);
   gui.add(params, 'spawn_useFloor').onChange(v => {
     spawner.useFloor = v;
   });
@@ -305,9 +305,36 @@ function updateParticleBuffer(index, p) {
   geo.attributes.rotation.needsUpdate = true;
 }
 
+function updateGrowth() {
+  if (growth.growing) {
+    if (growth.added >= growth.target) {
+      growth.growing = false;
+      return;
+    }
+    let steps = Math.min(params.cluster_growthRate, growth.target-growth.added); // don't overshoot target
+    if (growth.mode == 'brownian') {
+      growthStepBrownian(steps);
+      growth.added += steps;
+      setSpawnRadius(params.spawn_radius);
+    } else if (growth.mode == 'nearest') {
+      growthStepNearest(steps);
+      growth.added += steps;
+      setSpawnRadius(params.spawn_radius);
+    }
+  }
+}
 
 function growNearest() {
-  for (let i=0; i<params.cluster_growBy; i++) {
+  growth =  {
+    growing: true,
+    target: params.cluster_growBy,
+    added: 0,
+    mode: 'nearest'
+  };
+}
+
+function growthStepNearest(n = 1) {
+  for (let i=0; i<n; i++) {
     let p;
     if (cluster.size == 0) {
       p = new dla.Particle(0, 0, params.particle_size/2);
@@ -322,21 +349,6 @@ function growNearest() {
   }
   geo.maxInstancedCount = particleCount;
   gui_cluster_size.setValue(particleCount);
-}
-
-function updateGrowth() {
-  if (growth.growing) {
-    if (growth.added >= growth.target) {
-      growth.growing = false;
-      return;
-    }
-    let steps = Math.min(params.cluster_growthRate, growth.target-growth.added); // don't overshoot target
-    if (growth.mode == 'brownian') {
-      growthStepBrownian(steps);
-      growth.added += steps;
-      setSpawnRadius(params.spawn_radius);
-    }
-  }
 }
 
 function growBrownian() {
