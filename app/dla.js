@@ -1,4 +1,4 @@
-// [Witten & Sanders, 1981]-style DLA
+// [Witten & Sander, 1981]-style DLA
 export let stepSize = 1; // as a factor to the radius
 export let stickTolerance = 2;
 
