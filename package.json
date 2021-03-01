@@ -18,7 +18,7 @@
   "dependencies": {
     "dat.gui": "^0.7.5",
     "seedrandom": "^2.4.4",
-    "three": "^0.101.1"
+    "three": "^0.125.0"
   },
   "devDependencies": {
     "browser-sync": "^2.26.3"
